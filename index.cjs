@@ -15,7 +15,7 @@ const verifyRoute = require("./routes/verifypay.cjs");
 const searchRoutes = require('./routes/search.cjs');
 const categoryRoutes = require('./routes/category.cjs');
 const allowedOrigins = [
-  "https://saucytee-l5xk.vercel.app/", // ✅ your current frontend
+  "https://saucytee-l5xk.vercel.app", // ✅ your current frontend
   // add other domains if needed
 ];
 
