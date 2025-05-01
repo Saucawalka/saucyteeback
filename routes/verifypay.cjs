@@ -23,6 +23,8 @@ router.post("/verify-payment", async (req, res) => {
         Authorization: `Bearer ${paystack}`,
       },
     });
+    console.log("Paystack Key:", paystack);
+
 
     const paymentData = response.data;
 
