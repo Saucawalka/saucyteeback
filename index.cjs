@@ -14,6 +14,10 @@ const verifyRoute = require("./routes/verifypay.cjs");
 // const verifyPay = require("./routes/verifypay.cjs");
 const searchRoutes = require('./routes/search.cjs');
 const categoryRoutes = require('./routes/category.cjs');
+const allowedOrigins = [
+  "https://saucytee-l5xk.vercel.app/", // ✅ your current frontend
+  // add other domains if needed
+];
 
 
 
@@ -30,7 +34,16 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.json( {limit: '10mb'}));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cors({origin :'https://saucytee-l5xk.vercel.app/',credentials:true}));
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
 
 // JWT Middleware
 const verifyToken = (req, res, next) => {
