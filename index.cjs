@@ -90,6 +90,13 @@ app.use(cors({
   },
   credentials: true
 }));
+app.use((req, res, next) => {
+  if (req.path === '/api/userInfo/signin' || req.path === '/api/userInfo/signup') {
+    return next(); // skip authentication for these routes
+  }
+  authenticateUser(req, res, next);
+});
+
 app.use(authenticateUser);
 
 // JWT Middleware
