@@ -24,7 +24,6 @@ dotenv.config();
 
 const app = express();
 
-
 const PORT = process.env.PORT || 3000;
 
 const allowedOrigins = [
@@ -34,7 +33,7 @@ const allowedOrigins = [
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*', // or restrict to your frontend origin
+    origin: 'https://saucytee-eb6x.vercel.app', // or restrict to your frontend origin
   },
 });
 
@@ -78,14 +77,6 @@ io.on('connection', (socket) => {
   });
 });
 
-
-
-
-
-
-
-
-
 // Middleware
 app.use(express.json( {limit: '10mb'}));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -100,7 +91,6 @@ app.use(cors({
   credentials: true
 }));
 app.use(authenticateUser);
-
 
 // JWT Middleware
 const verifyToken = (req, res, next) => {
@@ -154,6 +144,8 @@ app.use("/api/admin", adminRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/chat', chatRoutes);
-app.listen(PORT, () => {
+
+// <-- This is the fix: use `server.listen` instead of `app.listen`
+server.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
