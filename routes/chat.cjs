@@ -1,5 +1,5 @@
-import express from 'express';
-import Message from '../models/Message.js';
+const express = require("express");
+const Message = require("../models/message.cjs");
 
 const router = express.Router();
 
