@@ -78,7 +78,7 @@ io.on('connection', (socket) => {
 });
 
 // Middleware
-app.use(express.json( {limit: '10mb'}));
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cors({
   origin: function (origin, callback) {
@@ -90,16 +90,19 @@ app.use(cors({
   },
   credentials: true
 }));
+
+// Exclude authenticateUser middleware from signin/signup routes
 app.use((req, res, next) => {
-  if (req.path === '/api/userInfo/signin' || req.path === '/api/userInfo/signup') {
-    return next(); // skip authentication for these routes
+  if (
+    req.path === '/api/userInfo/signin' ||
+    req.path === '/api/userInfo/signup'
+  ) {
+    return next(); // Skip authentication for signin/signup
   }
   authenticateUser(req, res, next);
 });
 
-app.use(authenticateUser);
-
-// JWT Middleware
+// JWT Middleware (you can keep this as is)
 const verifyToken = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ message: 'Access Denied' });
@@ -140,7 +143,6 @@ app.get('/api/user', verifyToken, (req, res) => {
 
 // Routes
 app.use('/api/userInfo', router);
-// In your main server file:
 app.use('/api', productRoute);
 app.use("/api/orders", orderRoutes);
 app.use("/api/cart", cartRoute);
@@ -152,7 +154,7 @@ app.use('/api/search', searchRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/chat', chatRoutes);
 
-// <-- This is the fix: use `server.listen` instead of `app.listen`
+// Listen with server, not app
 server.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
