@@ -19,6 +19,14 @@ const categoryRoutes = require('./routes/category.cjs');
 const Message = require('./models/message.cjs'); // Your Mongoose message model
 const { authenticateUser } = require('./middleware/authenticateUser.cjs');
 const chatRoutes = require('./routes/chat.cjs');
+
+dotenv.config();
+
+const app = express();
+
+
+const PORT = process.env.PORT || 3000;
+
 const allowedOrigins = [
   "https://saucytee-eb6x.vercel.app", // ✅ your current frontend
   // add other domains if needed
@@ -76,12 +84,7 @@ io.on('connection', (socket) => {
 
 
 
-dotenv.config();
 
-const app = express();
-
-
-const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json( {limit: '10mb'}));
