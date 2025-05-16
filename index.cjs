@@ -1,5 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
@@ -14,11 +16,59 @@ const verifyRoute = require("./routes/verifypay.cjs");
 // const verifyPay = require("./routes/verifypay.cjs");
 const searchRoutes = require('./routes/search.cjs');
 const categoryRoutes = require('./routes/category.cjs');
+const Message = require('./models/message.cjs'); // Your Mongoose message model
+const { authenticateUser } = require('./middleware/authenticateUser.cjs');
+import chatRoutes from './routes/chat.js';
 const allowedOrigins = [
   "https://saucytee-eb6x.vercel.app", // ✅ your current frontend
   // add other domains if needed
 ];
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*', // or restrict to your frontend origin
+  },
+});
 
+// Store connected clients
+const connectedUsers = {};
+
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+
+  socket.on('register', (userId) => {
+    connectedUsers[userId] = socket.id;
+  });
+
+  socket.on('sendMessage', async (data) => {
+    const { userId, sender, message } = data;
+
+    // Save to DB
+    const newMsg = new Message({
+      userId,
+      sender,
+      message,
+      timestamp: new Date(),
+    });
+    await newMsg.save();
+
+    // Emit to user or admin
+    if (connectedUsers[userId]) {
+      io.to(connectedUsers[userId]).emit('receiveMessage', newMsg);
+    }
+
+    // Emit to all admins (you can also filter by role if needed)
+    socket.broadcast.emit('receiveMessage', newMsg);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Disconnected:', socket.id);
+    // Optional: cleanup
+    for (const [uid, sid] of Object.entries(connectedUsers)) {
+      if (sid === socket.id) delete connectedUsers[uid];
+    }
+  });
+});
 
 
 
@@ -96,6 +146,7 @@ app.use("/api/verify", verifyRoute);
 app.use("/api/admin", adminRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/chat', chatRoutes);
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });

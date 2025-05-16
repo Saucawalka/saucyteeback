@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const Product = require("../models/product.cjs");
 const Order = require("../models/order.cjs");
+const Message = require("../models/message.cjs");
+const User = require("../models/models.cjs");
 const { authenticateUser, isAdmin } = require("../middleware/authenticateUser.cjs");
 
 // =======================
@@ -92,5 +94,47 @@ router.delete("/orders/:id", authenticateUser, isAdmin, async (req, res) => {
     res.status(400).json({ message: "Failed to delete order", error: err.message });
   }
 });
+router.get('/admin/chat/users', authenticateUser, isAdmin, async (req, res) => {
+  try {
+    // Find distinct userIds in chat messages
+    const userIds = await Message.distinct('userId');
+    // Find user info for these IDs
+    const users = await User.find({ _id: { $in: userIds } }).select('_id name email');
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error fetching users' });
+  }
+});
+
+// Get chat messages for a user
+router.get('/admin/chat/:userId', authenticateUser, isAdmin, async (req, res) => {
+  try {
+    const messages = await Message.find({ userId: req.params.userId }).sort({ timestamp: 1 });
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error fetching messages' });
+  }
+});
+
+// Post a new support message
+router.post('/admin/chat', authenticateUser, isAdmin, async (req, res) => {
+  try {
+    const { userId, message, sender } = req.body;
+    if (sender !== 'support') return res.status(400).json({ message: 'Sender must be support' });
+
+    const newMessage = new Message({
+      userId,
+      sender,
+      message,
+      timestamp: new Date(),
+    });
+
+    await newMessage.save();
+    res.status(201).json(newMessage);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error sending message' });
+  }
+});
+
 
 module.exports = router;
