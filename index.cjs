@@ -17,7 +17,7 @@ const verifyRoute = require("./routes/verifypay.cjs");
 const searchRoutes = require('./routes/search.cjs');
 const categoryRoutes = require('./routes/category.cjs');
 const Message = require('./models/message.cjs'); // Your Mongoose message model
-const { authenticateUser } = require('./middleware/authenticateUser.cjs');
+const { authenticateUser, isAdmin } = require('./middleware/authenticateUser.cjs'); // import isAdmin too
 const chatRoutes = require('./routes/chat.cjs');
 
 dotenv.config();
@@ -33,7 +33,7 @@ const allowedOrigins = [
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'https://saucytee-eb6x.vercel.app', // or restrict to your frontend origin
+    origin: 'https://saucytee-eb6x.vercel.app',
   },
 });
 
@@ -91,16 +91,16 @@ app.use(cors({
   credentials: true
 }));
 
-// Exclude authenticateUser middleware from signin/signup routes
-app.use((req, res, next) => {
-  if (
-    req.path === '/api/userInfo/signin' ||
-    req.path === '/api/userInfo/signup'
-  ) {
-    return next(); // Skip authentication for signin/signup
-  }
-  authenticateUser(req, res, next);
-});
+// REMOVE this global authenticateUser middleware entirely!
+// app.use((req, res, next) => {
+//   if (
+//     req.path === '/api/userInfo/signin' ||
+//     req.path === '/api/userInfo/signup'
+//   ) {
+//     return next(); // Skip authentication for signin/signup
+//   }
+//   authenticateUser(req, res, next);
+// });
 
 // JWT Middleware (you can keep this as is)
 const verifyToken = (req, res, next) => {
@@ -133,7 +133,7 @@ app.get('/', (req, res) => {
   res.send('Hello from backend with MongoDB!');
 });
 
-// Protected user route
+// Protected user route (example usage of verifyToken middleware)
 app.get('/api/user', verifyToken, (req, res) => {
   res.status(200).json({
     message: 'Protected route accessed successfully',
@@ -141,7 +141,7 @@ app.get('/api/user', verifyToken, (req, res) => {
   });
 });
 
-// Routes
+// Routes WITHOUT authentication
 app.use('/api/userInfo', router);
 app.use('/api', productRoute);
 app.use("/api/orders", orderRoutes);
@@ -149,10 +149,12 @@ app.use("/api/cart", cartRoute);
 app.use("/api/address", addressRoute);
 // app.use("/api/payment", paymentRoute);
 app.use("/api/verify", verifyRoute);
-app.use("/api/admin", adminRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/chat', chatRoutes);
+
+// Routes WITH admin authentication
+app.use('/api/admin', authenticateUser, isAdmin, adminRoutes);
 
 // Listen with server, not app
 server.listen(PORT, () => {
