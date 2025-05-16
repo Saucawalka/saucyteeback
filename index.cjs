@@ -18,7 +18,7 @@ const searchRoutes = require('./routes/search.cjs');
 const categoryRoutes = require('./routes/category.cjs');
 const Message = require('./models/message.cjs'); // Your Mongoose message model
 const { authenticateUser } = require('./middleware/authenticateUser.cjs');
-import chatRoutes from './routes/chat.js';
+const chatRoutes = require('./routes/chat.cjs');
 const allowedOrigins = [
   "https://saucytee-eb6x.vercel.app", // ✅ your current frontend
   // add other domains if needed
@@ -79,6 +79,8 @@ io.on('connection', (socket) => {
 dotenv.config();
 
 const app = express();
+
+
 const PORT = process.env.PORT || 3000;
 
 // Middleware
@@ -94,6 +96,8 @@ app.use(cors({
   },
   credentials: true
 }));
+app.use(authenticateUser);
+
 
 // JWT Middleware
 const verifyToken = (req, res, next) => {
