@@ -37,45 +37,76 @@ const io = new Server(server, {
   },
 });
 
+// ... your existing imports and setup ...
+
 // Store connected clients
-const connectedUsers = {};
+const connectedUsers = {};    // userId -> socket.id
+const connectedAdmins = new Set(); // socket.id of admins
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
+  // User registers with their userId
   socket.on('register', (userId) => {
     connectedUsers[userId] = socket.id;
+    console.log(`User registered: ${userId} -> ${socket.id}`);
   });
 
+  // Admin joins
+  socket.on('admin_join', () => {
+    connectedAdmins.add(socket.id);
+    console.log(`Admin joined: ${socket.id}`);
+  });
+
+  // User sends a message
   socket.on('sendMessage', async (data) => {
     const { userId, sender, message } = data;
 
-    // Save to DB
-    const newMsg = new Message({
-      userId,
-      sender,
-      message,
-      timestamp: new Date(),
-    });
-    await newMsg.save();
+    try {
+      // Save message to DB
+      const newMsg = new Message({
+        userId,
+        sender,
+        message,
+        timestamp: new Date(),
+      });
+      await newMsg.save();
 
-    // Emit to user or admin
-    if (connectedUsers[userId]) {
-      io.to(connectedUsers[userId]).emit('receiveMessage', newMsg);
+      // Send back to the user who sent it
+      if (connectedUsers[userId]) {
+        io.to(connectedUsers[userId]).emit('receiveMessage', newMsg);
+      }
+
+      // Send to all admins
+      connectedAdmins.forEach((adminSocketId) => {
+        io.to(adminSocketId).emit('new_user_message', newMsg);
+      });
+    } catch (err) {
+      console.error('Error saving message:', err);
     }
-
-    // Emit to all admins (you can also filter by role if needed)
-    socket.broadcast.emit('receiveMessage', newMsg);
   });
 
+  // Cleanup on disconnect
   socket.on('disconnect', () => {
     console.log('Disconnected:', socket.id);
-    // Optional: cleanup
+
+    // Remove user if disconnected
     for (const [uid, sid] of Object.entries(connectedUsers)) {
-      if (sid === socket.id) delete connectedUsers[uid];
+      if (sid === socket.id) {
+        delete connectedUsers[uid];
+        console.log(`User disconnected: ${uid}`);
+        break;
+      }
+    }
+
+    // Remove admin if disconnected
+    if (connectedAdmins.has(socket.id)) {
+      connectedAdmins.delete(socket.id);
+      console.log(`Admin disconnected: ${socket.id}`);
     }
   });
 });
+
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
